@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>StreamChat Simulator – Overlay</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:transparent !important; overflow:hidden; font-family:'Segoe UI',Arial,sans-serif; }
+
+  #chat {
+    position:fixed;
+    bottom:0; left:0; right:0;
+    padding:8px 6px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    gap:2px;
+    max-height:100vh;
+    overflow:hidden;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0,0,0,0.2) 15%,
+      rgba(0,0,0,0.6) 35%,
+      black 60%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0,0,0,0.2) 15%,
+      rgba(0,0,0,0.6) 35%,
+      black 60%
+    );
+  }
+
+  .msg {
+    padding:3px 10px;
+    font-size:15px;
+    line-height:1.5;
+    word-break:break-word;
+    animation:si .25s ease-out;
+    text-shadow:
+      1px 1px 3px #000,
+     -1px -1px 3px #000,
+      1px -1px 3px #000,
+     -1px  1px 3px #000,
+      0 2px 8px rgba(0,0,0,.9);
+  }
+
+  @keyframes si {
+    from { opacity:0; transform:translateX(-8px); }
+    to   { opacity:1; transform:translateX(0); }
+  }
+
+  .name { font-weight:700; }
+  .name::after { content:': '; color:#efeff1; font-weight:400; }
+  .text { color:#efeff1; }
+
+  .badge {
+    display:inline-block;
+    width:16px; height:16px;
+    border-radius:3px;
+    font-size:10px;
+    line-height:16px;
+    text-align:center;
+    vertical-align:middle;
+    margin-right:2px;
+  }
+
+  #st {
+    position:fixed;
+    top:8px; right:10px;
+    font-size:11px;
+    color:rgba(255,255,255,.35);
+    text-shadow:1px 1px 2px #000;
+    font-family:monospace;
+    pointer-events:none;
+  }
+  #st.live { color:rgba(0,220,100,.8); }
+</style>
+</head>
+<body>
+<div id="st">⏳ a conectar...</div>
+<div id="chat"></div>
+
+<script>
+const chat = document.getElementById('chat');
+const st   = document.getElementById('st');
+const MAX  = 25;
+const ICONS = {sub:'⭐', mod:'🗡️', vip:'💎'};
+
+function connect() {
+  const es = new EventSource('http://localhost:8080/events');
+
+  es.onopen = () => {
+    st.textContent = '⏳ aguardando...';
+    st.className = '';
+  };
+
+  es.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+
+    if (data.type === 'connected') {
+      st.textContent = '⏳ aguardando...';
+    }
+
+    if (data.type === 'message') {
+      st.textContent = '🟢 ao vivo';
+      st.className = 'live';
+      addMsg(data.data);
+    }
+
+    if (data.type === 'clear') {
+      chat.innerHTML = '';
+    }
+
+    if (data.type === 'status' && data.status === 'stopped') {
+      st.textContent = '⏸ parado';
+      st.className = '';
+    }
+  };
+
+  es.onerror = () => {
+    st.textContent = '🔴 sem ligação...';
+    st.className = '';
+    es.close();
+    setTimeout(connect, 3000);
+  };
+}
+
+connect();
+
+function addMsg({username, color, text, badges}) {
+  const d = document.createElement('div');
+  d.className = 'msg';
+  const b = (badges||[]).map(x =>
+    `<span class="badge" style="background:${x==='mod'?'#00ad03':x==='vip'?'#e005b9':'#9147ff'}">${ICONS[x]||''}</span>`
+  ).join('');
+  d.innerHTML = b +
+    `<span class="name" style="color:${color}">${esc(username)}</span>` +
+    `<span class="text">${esc(text)}</span>`;
+  chat.appendChild(d);
+  while (chat.children.length > MAX) chat.removeChild(chat.firstChild);
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

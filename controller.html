@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>StreamChat Simulator – Controlador</title>
+<style>
+  :root {
+    --bg:#0e0e10; --surface:#18181b; --surface2:#1f1f23;
+    --border:#2a2a2e; --accent:#9147ff; --accent2:#bf94ff;
+    --text:#efeff1; --muted:#848494; --green:#00b26b; --red:#eb0400;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;}
+  #panel{width:420px;min-width:420px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+  .header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .logo{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .header h1{font-size:15px;font-weight:700;}
+  .badge-obs{margin-left:auto;font-size:11px;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px;border:1px solid var(--border);}
+  .status-bar{padding:10px 20px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+  .dot.live{background:var(--red);box-shadow:0 0 6px var(--red);animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .prog{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .prog-fill{height:100%;background:var(--accent);transition:width .3s;}
+  .counter{font-family:monospace;font-size:11px;}
+  .section{padding:14px 20px;border-bottom:1px solid var(--border);}
+  .section-title{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  label.lbl{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+  input[type=number],input[type=text],select,textarea{width:100%;background:#0e0e10;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;font-family:inherit;outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+  textarea{resize:vertical;min-height:90px;font-family:monospace;font-size:12px;line-height:1.5;}
+  .hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4;}
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;}
+  .btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .btn-primary{background:var(--accent);color:#fff;} .btn-primary:hover{background:#7c3aed;}
+  .btn-success{background:var(--green);color:#fff;} .btn-success:hover{background:#00944f;}
+  .btn-danger{background:var(--red);color:#fff;} .btn-danger:hover{background:#c40300;}
+  .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);} .btn-ghost:hover{background:var(--border);}
+  .btn-full{width:100%;justify-content:center;}
+  .user-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;max-height:180px;overflow-y:auto;}
+  .user-item{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;}
+  .u-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+  .u-name{font-size:13px;font-weight:600;flex:1;}
+  .u-rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;}
+  .u-rm:hover{color:var(--red);}
+  .add-row{display:flex;gap:6px;align-items:center;}
+  .add-row input[type=text]{flex:1;}
+  .add-row input[type=color]{width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:#0e0e10;padding:2px;cursor:pointer;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .toggle{position:relative;width:36px;height:20px;}
+  .toggle input{display:none;}
+  .tslider{position:absolute;inset:0;background:var(--border);border-radius:20px;cursor:pointer;transition:background .2s;}
+  .tslider::before{content:'';position:absolute;left:3px;top:3px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s;}
+  .toggle input:checked+.tslider{background:var(--accent);}
+  .toggle input:checked+.tslider::before{transform:translateX(16px);}
+  .range-row{display:flex;align-items:center;gap:8px;}
+  .range-row input[type=range]{flex:1;accent-color:var(--accent);}
+  .rval{font-size:12px;font-family:monospace;color:var(--accent2);min-width:32px;text-align:right;}
+  .obs-info{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:12px;line-height:1.6;color:var(--muted);}
+  .obs-info code{color:var(--accent2);font-family:monospace;}
+  #preview{flex:1;display:flex;flex-direction:column;background:#111;}
+  .preview-header{padding:10px 14px;background:rgba(14,14,16,.95);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+  .preview-header strong{color:var(--text);font-size:13px;}
+  .preview-header .vc{margin-left:auto;}
+  #preview-msgs{flex:1;overflow-y:auto;padding:6px 0;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(14,14,16,.9);}
+  #preview-msgs::-webkit-scrollbar{width:4px;}
+  #preview-msgs::-webkit-scrollbar-thumb{background:var(--border);}
+  .cmsg{padding:3px 14px;font-size:13px;line-height:1.5;word-break:break-word;animation:si .2s ease-out;}
+  @keyframes si{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+  .cmsg:hover{background:rgba(255,255,255,.04);}
+  .cname{font-weight:700;}
+  .cname::after{content:': ';color:var(--text);font-weight:400;}
+  .ctext{color:var(--text);}
+  .preview-footer{padding:10px 14px;background:rgba(14,14,16,.95);border-top:1px solid var(--border);display:flex;gap:8px;}
+  .fake-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--muted);}
+  .fake-btn{background:var(--accent);border:none;border-radius:6px;padding:7px 12px;color:#fff;font-size:12px;font-weight:600;}
+  .lang-bar{display:flex;gap:4px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);}
+  .lang-btn{background:none;border:1px solid transparent;border-radius:6px;font-size:16px;cursor:pointer;padding:3px 7px;transition:all .15s;}
+  .lang-btn:hover{border-color:var(--border);background:var(--surface2);}
+  .lang-btn.active{border-color:var(--accent);background:var(--surface2);}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <div class="header">
+    <div class="logo">💬</div>
+    <h1>StreamChat Simulator</h1>
+    <span class="badge-obs" data-i18n="controller">Controlador</span>
+    </div>
+  <div class="lang-bar">
+    <button class="lang-btn active" onclick="setLang('pt')" title="Português">🇧🇷</button>
+    <button class="lang-btn" onclick="setLang('en')" title="English">🇺🇸</button>
+    <button class="lang-btn" onclick="setLang('fr')" title="Français">🇫🇷</button
+  </div>
+
+  <div class="status-bar">
+    <div class="dot" id="dot"></div>
+    <span id="status-text" data-i18n="stopped">Parado</span>
+    <div class="prog"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+    <span class="counter" id="counter">0/0</span>
+  </div>
+
+  <!-- CONTROLO -->
+  <div class="section">
+    <div class="section-title" data-i18n="control">Controlo</div>
+    <div class="grid2">
+      <div><label class="lbl" data-i18n="minInterval">Intervalo mín. (seg)</label><input type="number" id="min-int" value="3" min="0.5" step="0.5"></div>
+      <div><label class="lbl" data-i18n="maxInterval">Intervalo máx. (seg)</label><input type="number" id="max-int" value="7" min="1" step="0.5"></div>
+    </div>
+    <div class="grid2">
+      <div><label class="lbl" data-i18n="maxMsgs">Máx. msgs no preview</label><input type="number" id="max-msgs" value="20" min="5" max="100"></div>
+      <div><label class="lbl" data-i18n="mode">Modo</label>
+        <select id="mode">
+          <option value="sequential" data-i18n="sequential">Sequencial</option>
+          <option value="random" data-i18n="random">Aleatório</option>
+          <option value="loop">Loop</option>
+        </select>
+      </div>
+    </div>
+    <div class="toggle-row"><label data-i18n="badges">Badges (sub/mod/vip)</label><label class="toggle"><input type="checkbox" id="badges" checked><div class="tslider"></div></label></div>
+    <div class="toggle-row"><label data-i18n="autoLoop">Loop automático</label><label class="toggle"><input type="checkbox" id="loop" checked><div class="tslider"></div></label></div>
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="startChat()"><span data-i18n="start">▶ Iniciar</span></button>
+      <button class="btn btn-danger" onclick="stopChat()"><span data-i18n="stop">■ Parar</span></button>
+      <button class="btn btn-ghost" onclick="clearChat()"><span data-i18n="clear">🗑 Limpar</span></button>
+    </div>
+  </div>
+
+  <!-- UTILIZADORES -->
+  <div class="section">
+    <div class="section-title" data-i18n="users">Utilizadores</div>
+    <div class="user-list" id="user-list"></div>
+    <div class="add-row">
+      <input type="text" id="new-name" id="new-name-input" data-i18n-placeholder="userPlaceholder" placeholder="Nome do utilizador...">
+      <input type="color" id="new-color" value="#9147ff">
+      <button class="btn btn-primary" onclick="addUser()" title="Add">+</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="document.getElementById('f-users').click()">📂 <span data-i18n="import">Importar</span></button>
+      <input type="file" id="f-users" accept=".txt,.csv" style="display:none" onchange="importUsers(this)">
+      <button class="btn btn-ghost" onclick="exportUsers()">💾 <span data-i18n="export">Exportar</span></button>
+    </div>
+    <p class="hint" data-i18n="usersHint">Formato: <code style="color:var(--accent2)">Nome,#cor</code> — uma linha por utilizador</p>
+  </div>
+
+  <!-- MENSAGENS -->
+  <div class="section">
+    <div class="section-title" data-i18n="messages">Mensagens</div>
+    <textarea id="msgs" data-i18n-placeholder="msgsPlaceholder" placeholder="Uma mensagem por linha.&#10;Use @NomeUser no início para atribuir a um utilizador."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="document.getElementById('f-msgs').click()">📂 <span data-i18n="import">Importar</span></button>
+      <input type="file" id="f-msgs" accept=".txt" style="display:none" onchange="importMsgs(this)">
+      <button class="btn btn-ghost" onclick="exportMsgs()">💾 <span data-i18n="export">Exportar</span></button>
+    </div>
+  </div>
+
+  <!-- APARÊNCIA -->
+  <div class="section">
+    <div class="section-title" data-i18n="appearance">Aparência</div>
+    <div class="grid2">
+      <div><label class="lbl" data-i18n="channel">Canal</label><input type="text" id="channel" value="My Channel" oninput="updateHeader()"></div>
+      <div><label class="lbl" data-i18n="viewers">Viewers</label><input type="number" id="viewers" value="847" oninput="updateHeader()"></div>
+    </div>
+    <div><label class="lbl" data-i18n="fontSize">Tamanho da fonte</label>
+      <div class="range-row"><input type="range" id="fsize" min="11" max="22" value="14" oninput="document.getElementById('fsize-val').textContent=this.value+'px'"><span class="rval" id="fsize-val">14px</span></div>
+    </div>
+  </div>
+
+  <!-- OBS -->
+  <div class="section">
+    <div class="section-title" data-i18n="obsOverlay">Overlay OBS</div>
+    <div class="obs-info">
+      <span data-i18n="obsInfo">Abre o overlay no browser e usa <strong>Window Capture</strong> no OBS.<br><br>Ou serve via servidor local e usa <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code></span>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-full" onclick="openOverlay()">🖥️ <span data-i18n="openOverlay">Abrir Overlay</span></button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-full" onclick="showServerInstructions()">⚙️ <span data-i18n="howToObs">Como usar com Browser Source</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW -->
+<div id="preview">
+  <div class="preview-header">
+    💬 <strong id="ph-channel">My Channel</strong>
+    <span class="vc">🔴 <span id="ph-viewers">847</span> viewers</span>
+  </div>
+  <div id="preview-msgs"></div>
+  <div class="preview-footer">
+    <div class="fake-input" data-i18n="sendMsg">Enviar uma mensagem...</div>
+    <div class="fake-btn">Chat</div>
+  </div>
+</div>
+
+<script>
+// ===== ENVIO PARA OVERLAY VIA SERVIDOR =====
+
+// ===== ESTADO =====
+let users = [
+  {name:'xX_Pr0Gamer_Xx',  color:'#ff6b6b', badges:['sub']},
+  {name:'CoolDude420',     color:'#ffd93d', badges:[]},
+  {name:'StreamQueen99',   color:'#6bcb77', badges:['mod']},
+  {name:'n00bSlayer',      color:'#4d96ff', badges:[]},
+  {name:'DarkWolf2077',    color:'#c77dff', badges:['sub']},
+  {name:'PixelKnight',     color:'#ff9f43', badges:[]},
+  {name:'LegendaryL0ser',  color:'#48dbfb', badges:['vip']},
+  {name:'420BlazeitFTW',   color:'#ff6b9d', badges:[]},
+  {name:'GlitchHunter',    color:'#a8e063', badges:['sub']},
+  {name:'ShadowByte_',     color:'#f7971e', badges:[]},
+];
+let running=false, timer=null, idx=0, count=0, total=0;
+const ICONS={sub:'⭐',mod:'🗡️',vip:'💎'};
+
+
+// ===== I18N =====
+const TRANSLATIONS = {
+  pt: {
+    control:'Controlo', users:'Utilizadores', messages:'Mensagens',
+    appearance:'Aparência', minInt:'Intervalo mín. (seg)', maxInt:'Intervalo máx. (seg)',
+    maxMsgs:'Máx. msgs no preview', mode:'Modo', channel:'Canal', fontSize:'Tamanho da fonte',
+    sequential:'Sequencial', random:'Aleatório',
+    badges:'Badges (sub/mod/vip)', autoLoop:'Loop automático',
+    start:'▶ Iniciar', stop:'■ Parar', clear:'🗑 Limpar',
+    import:'📂 Importar', export:'💾 Exportar',
+    openOverlay:'🖥️ Abrir Overlay', howTo:'⚙️ Como usar com Browser Source',
+    formatHint:'Formato: <code style="color:var(--accent2)">Nome,#cor</code> — uma linha por utilizador',
+    stopped:'Parado', sendMsg:'Enviar uma mensagem...',
+    obsInfo:'Abre o overlay no browser e usa <strong>Window Capture</strong> no OBS.<br><br>Ou serve via servidor local e usa <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
+    alertNoMsgs:'Adiciona mensagens primeiro!', alertNoUsers:'Adiciona utilizadores primeiro!',
+    statusLive:'A transmitir...', statusDone:'Concluído ✓',
+    obsInstructions:`📡 Para usar com Browser Source no OBS:\n\n1. Abre o terminal (CMD) na pasta dos ficheiros\n2. Corre: python server.py\n3. No OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n\nDepois abre o controlador em:\n   http://localhost:8080/controller.html`,
+    newUserPlaceholder:'Nome do utilizador...',
+    msgsPlaceholder:'Uma mensagem por linha.\nUse @NomeUser no início para atribuir a um utilizador.',
+  },
+  en: {
+    control:'Control', users:'Users', messages:'Messages',
+    appearance:'Appearance', minInt:'Min. interval (sec)', maxInt:'Max. interval (sec)',
+    maxMsgs:'Max. msgs in preview', mode:'Mode', channel:'Channel', fontSize:'Font size',
+    sequential:'Sequential', random:'Random',
+    badges:'Badges (sub/mod/vip)', autoLoop:'Auto loop',
+    start:'▶ Start', stop:'■ Stop', clear:'🗑 Clear',
+    import:'📂 Import', export:'💾 Export',
+    openOverlay:'🖥️ Open Overlay', howTo:'⚙️ How to use with Browser Source',
+    formatHint:'Format: <code style="color:var(--accent2)">Name,#color</code> — one user per line',
+    stopped:'Stopped', sendMsg:'Send a message...',
+    obsInfo:'Open the overlay in your browser and use <strong>Window Capture</strong> in OBS.<br><br>Or serve via local server and use <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
+    alertNoMsgs:'Add messages first!', alertNoUsers:'Add users first!',
+    statusLive:'Broadcasting...', statusDone:'Completed ✓',
+    obsInstructions:`📡 To use with Browser Source in OBS:\n\n1. Open terminal (CMD) in the files folder\n2. Run: python server.py\n3. In OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n\nThen open the controller at:\n   http://localhost:8080/controller.html`,
+    newUserPlaceholder:'Username...',
+    msgsPlaceholder:'One message per line.\nUse @Username at the start to assign to a specific user.',
+  },
+  fr: {
+    control:'Contrôle', users:'Utilisateurs', messages:'Messages',
+    appearance:'Apparence', minInt:'Intervalle min. (sec)', maxInt:'Intervalle max. (sec)',
+    maxMsgs:'Max. msgs dans aperçu', mode:'Mode', channel:'Chaîne', fontSize:'Taille de police',
+    sequential:'Séquentiel', random:'Aléatoire',
+    badges:'Badges (sub/mod/vip)', autoLoop:'Boucle auto',
+    start:'▶ Démarrer', stop:'■ Arrêter', clear:'🗑 Effacer',
+    import:'📂 Importer', export:'💾 Exporter',
+    openOverlay:'🖥️ Ouvrir Overlay', howTo:'⚙️ Comment utiliser avec Browser Source',
+    formatHint:'Format : <code style="color:var(--accent2)">Nom,#couleur</code> — un utilisateur par ligne',
+    stopped:'Arrêté', sendMsg:'Envoyer un message...',
+    obsInfo:'Ouvrez l'overlay dans le navigateur et utilisez <strong>Window Capture</strong> dans OBS.<br><br>Ou servez via serveur local et utilisez <strong>Browser Source</strong> :<br><code>http://localhost:8080/overlay.html</code>',
+    alertNoMsgs:'Ajoutez des messages d'abord !', alertNoUsers:'Ajoutez des utilisateurs d'abord !',
+    statusLive:'En direct...', statusDone:'Terminé ✓',
+    obsInstructions:`📡 Pour utiliser avec Browser Source dans OBS :\n\n1. Ouvrez le terminal (CMD) dans le dossier des fichiers\n2. Exécutez : python server.py\n3. Dans OBS → Browser Source → URL :\n   http://localhost:8080/overlay.html\n\nEnsuite ouvrez le contrôleur à :\n   http://localhost:8080/controller.html`,
+    newUserPlaceholder:'Nom d'utilisateur...',
+    msgsPlaceholder:'Un message par ligne.\nUtilisez @Nom au début pour attribuer à un utilisateur spécifique.',
+  }
+};
+
+let currentLang = 'pt';
+
+function setLang(lang) {
+  currentLang = lang;
+  const t = TRANSLATIONS[lang];
+
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.innerHTML = t[key];
+  });
+
+  // Update select options
+  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
+    const key = el.getAttribute('data-i18n-opt');
+    if (t[key] !== undefined) el.textContent = t[key];
+  });
+
+  // Update placeholders
+  const newName = document.getElementById('new-name');
+  if (newName) newName.placeholder = t.newUserPlaceholder;
+  const msgs = document.getElementById('msgs');
+  if (msgs) msgs.placeholder = t.msgsPlaceholder;
+
+  // Highlight active button
+  ['pt','en','fr'].forEach(l => {
+    const btn = document.getElementById('btn-'+l);
+    if (btn) btn.style.background = l === lang ? 'var(--accent)' : 'none';
+  });
+
+  localStorage.setItem('streamchat_lang', lang);
+}
+
+function t(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS['pt'])[key] || key; }
+
+// Apply lang from URL param or localStorage on load
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  const saved = params.get('lang') || localStorage.getItem('streamchat_lang') || 'pt';
+  setLang(saved);
+  renderUsers();
+  updateHeader();
+});
+
+
+// ===== UTILIZADORES =====
+function renderUsers(){
+  const list=document.getElementById('user-list');
+  list.innerHTML='';
+  users.forEach((u,i)=>{
+    const d=document.createElement('div');
+    d.className='user-item';
+    d.innerHTML=`
+      <div class="u-dot" style="background:${u.color}"></div>
+      <span class="u-name" style="color:${u.color}">${u.name}</span>
+      <input type="color" value="${u.color}" style="width:22px;height:22px;border-radius:4px;border:1px solid #2a2a2e;background:#0e0e10;padding:1px;cursor:pointer" oninput="users[${i}].color=this.value;renderUsers()">
+      <select style="background:#0e0e10;border:1px solid #2a2a2e;color:#efeff1;border-radius:4px;font-size:11px;padding:2px" onchange="users[${i}].badges=this.value?[this.value]:[]">
+        <option value="">—</option>
+        <option value="sub" ${u.badges.includes('sub')?'selected':''}>⭐ sub</option>
+        <option value="mod" ${u.badges.includes('mod')?'selected':''}>🗡️ mod</option>
+        <option value="vip" ${u.badges.includes('vip')?'selected':''}>💎 vip</option>
+      </select>
+      <button class="u-rm" onclick="users.splice(${i},1);renderUsers()">✕</button>`;
+    list.appendChild(d);
+  });
+}
+
+function addUser(){
+  const name=document.getElementById('new-name').value.trim();
+  const color=document.getElementById('new-color').value;
+  if(!name) return;
+  users.push({name,color,badges:[]});
+  document.getElementById('new-name').value='';
+  renderUsers();
+}
+
+function importUsers(input){
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    users = [];
+    e.target.result.split('\n').map(l=>l.trim()).filter(Boolean).forEach(line=>{
+      const p=line.split(',');
+      if(p[0].trim()) users.push({name:p[0].trim(), color:p[1]?p[1].trim():'#9147ff', badges:[]});
+    });
+    renderUsers();
+  };
+  r.readAsText(f); input.value='';
+}
+
+function exportUsers(){
+  dl('utilizadores.txt', users.map(u=>`${u.name},${u.color}`).join('\n'));
+}
+
+// ===== MENSAGENS =====
+function getMsgs(){ return document.getElementById('msgs').value.split('\n').map(l=>l.trim()).filter(Boolean); }
+
+function importMsgs(input){
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const cur=document.getElementById('msgs').value.trim();
+    document.getElementById('msgs').value=cur?cur+'\n'+e.target.result.trim():e.target.result.trim();
+  };
+  r.readAsText(f); input.value='';
+}
+
+function exportMsgs(){ dl('mensagens.txt', document.getElementById('msgs').value); }
+
+// ===== CHAT ENGINE =====
+function startChat(){
+  if(running) return;
+  const msgs=getMsgs();
+  if(!msgs.length){alert(i18n[currentLang].alertNoMsgs); return;}
+  if(!users.length){alert(i18n[currentLang].alertNoUsers); return;}
+  running=true; idx=0; count=0; total=msgs.length;
+  document.getElementById('dot').classList.add('live');
+  document.getElementById('status-text').textContent=i18n[currentLang].live;
+  broadcast({type:'status', status:'live'});
+  scheduleNext();
+}
+
+function stopChat(){
+  running=false; clearTimeout(timer);
+  document.getElementById('dot').classList.remove('live');
+  document.getElementById('status-text').textContent=i18n[currentLang].stopped;
+  document.getElementById('prog').style.width='0%';
+  document.getElementById('counter').textContent='0/0';
+  broadcast({type:'status', status:'stopped'});
+}
+
+function clearChat(){
+  document.getElementById('preview-msgs').innerHTML='';
+  count=0;
+  broadcast({type:'clear'});
+}
+
+function scheduleNext(){
+  if(!running) return;
+  const msgs=getMsgs();
+  const mode=document.getElementById('mode').value;
+  const loop=document.getElementById('loop').checked;
+  if(idx>=msgs.length){
+    if(loop||mode==='loop'){idx=0;}
+    else{stopChat(); document.getElementById('status-text').textContent=i18n[currentLang].completed; return;}
+  }
+  const min=parseFloat(document.getElementById('min-int').value)*1000;
+  const max=parseFloat(document.getElementById('max-int').value)*1000;
+  const delay=Math.random()*(max-min)+min;
+  const msgText=mode==='random'?msgs[Math.floor(Math.random()*msgs.length)]:msgs[idx++];
+  timer=setTimeout(()=>{ emit(msgText, msgs.length); scheduleNext(); }, delay);
+}
+
+function emit(raw, tot){
+  let user, text;
+  if(raw.startsWith('@')){
+    const sp=raw.indexOf(' ');
+    if(sp>0){
+      const tgt=raw.substring(1,sp).toLowerCase();
+      user=users.find(u=>u.name.toLowerCase()===tgt)||randUser();
+      text=raw.substring(sp+1);
+    } else {user=randUser(); text=raw;}
+  } else {user=randUser(); text=raw;}
+
+  addPreviewMsg(user, text);
+
+  broadcast({
+    type:'message',
+    data:{username:user.name, color:user.color, badges:user.badges||[], text}
+  });
+
+  count++;
+  if(tot>0){
+    document.getElementById('prog').style.width=Math.min(count/tot*100,100)+'%';
+    document.getElementById('counter').textContent=`${count}/${tot}`;
+  }
+  const base=parseInt(document.getElementById('viewers').value)||847;
+  document.getElementById('ph-viewers').textContent=Math.max(0,base+Math.floor((Math.random()-.5)*20)).toLocaleString();
+}
+
+function addPreviewMsg(user, text){
+  const container=document.getElementById('preview-msgs');
+  const max=parseInt(document.getElementById('max-msgs').value)||20;
+  const showB=document.getElementById('badges').checked;
+  const fs=document.getElementById('fsize').value;
+  const d=document.createElement('div');
+  d.className='cmsg'; d.style.fontSize=fs+'px';
+  let b='';
+  if(showB && user.badges && user.badges.length){
+    b=user.badges.map(x=>`<span style="display:inline-block;width:16px;height:16px;border-radius:3px;font-size:10px;line-height:16px;text-align:center;vertical-align:middle;background:${x==='mod'?'#00ad03':x==='vip'?'#e005b9':'#9147ff'};margin-right:2px">${ICONS[x]||''}</span>`).join('');
+  }
+  d.innerHTML=`${b}<span class="cname" style="color:${user.color}">${esc(user.name)}</span><span class="ctext">${esc(text)}</span>`;
+  container.appendChild(d);
+  while(container.children.length>max) container.removeChild(container.firstChild);
+  container.scrollTop=container.scrollHeight;
+}
+
+function randUser(){ return users[Math.floor(Math.random()*users.length)]; }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function broadcast(data){
+  fetch('http://localhost:8080/send', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  }).catch(()=>{});
+}
+function dl(name,content){ const a=document.createElement('a'); a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(content); a.download=name; a.click(); }
+
+function updateHeader(){
+  document.getElementById('ph-channel').textContent=document.getElementById('channel').value||'My Channel';
+  document.getElementById('ph-viewers').textContent=parseInt(document.getElementById('viewers').value||847).toLocaleString();
+}
+
+// ===== OVERLAY =====
+function openOverlay(){
+  const base=window.location.href.replace('controller.html','overlay.html');
+  window.open(base,'mozvibes_overlay','width=420,height=700,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no');
+}
+
+function showServerInstructions(){
+  alert(
+    '📡 Para usar com Browser Source no OBS:\n\n' +
+    '1. Abre o terminal (CMD) na pasta dos ficheiros\n' +
+    '2. Corre: python -m http.server 8080\n' +
+    '3. No OBS → Browser Source → URL:\n' +
+    '   http://localhost:8080/overlay.html\n\n' +
+    'Depois abre o controlador em:\n' +
+    '   http://localhost:8080/controller.html\n\n' +
+i18n[currentLang].serverAlert
+  );
+}
+
+document.getElementById('new-name').addEventListener('keydown',e=>{ if(e.key==='Enter') addUser(); });
+
+// ===== INTERNACIONALIZAÇÃO =====
+const i18n = {
+  pt: {
+    controller: 'Controlador',
+    stopped: 'Parado', live: 'A transmitir...', completed: 'Concluído ✓',
+    control: 'Controlo', users: 'Utilizadores', messages: 'Mensagens',
+    appearance: 'Aparência', obsOverlay: 'Overlay OBS',
+    minInterval: 'Intervalo mín. (seg)', maxInterval: 'Intervalo máx. (seg)',
+    maxMsgs: 'Máx. msgs no preview', mode: 'Modo',
+    sequential: 'Sequencial', random: 'Aleatório', loop: 'Loop',
+    badges: 'Badges (sub/mod/vip)', autoLoop: 'Loop automático',
+    start: '▶ Iniciar', stop: '■ Parar', clear: '🗑 Limpar',
+    import: 'Importar', export: 'Exportar',
+    channel: 'Canal', viewers: 'Viewers', fontSize: 'Tamanho da fonte',
+    openOverlay: 'Abrir Overlay', howToObs: 'Como usar com Browser Source',
+    sendMsg: 'Enviar uma mensagem...',
+    usersHint: 'Formato: <code style="color:var(--accent2)">Nome,#cor</code> — uma linha por utilizador',
+    userPlaceholder: 'Nome do utilizador...',
+    msgsPlaceholder: 'Uma mensagem por linha.\nUse @NomeUser no início para atribuir a um utilizador.',
+    obsInfo: 'Abre o overlay no browser e usa <strong>Window Capture</strong> no OBS.<br><br>Ou serve via servidor local e usa <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
+    alertNoMsgs: 'Adiciona mensagens primeiro!', alertNoUsers: 'Adiciona utilizadores primeiro!',
+    serverAlert: '📡 Para usar com Browser Source no OBS:\n\n1. Abre o terminal (CMD) na pasta dos ficheiros\n2. Corre: python server.py\n3. No OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n\nDepois abre o controlador em:\n   http://localhost:8080/controller.html',
+  },
+  en: {
+    controller: 'Controller',
+    stopped: 'Stopped', live: 'Broadcasting...', completed: 'Completed ✓',
+    control: 'Control', users: 'Users', messages: 'Messages',
+    appearance: 'Appearance', obsOverlay: 'OBS Overlay',
+    minInterval: 'Min. interval (sec)', maxInterval: 'Max. interval (sec)',
+    maxMsgs: 'Max. msgs in preview', mode: 'Mode',
+    sequential: 'Sequential', random: 'Random', loop: 'Loop',
+    badges: 'Badges (sub/mod/vip)', autoLoop: 'Auto loop',
+    start: '▶ Start', stop: '■ Stop', clear: '🗑 Clear',
+    import: 'Import', export: 'Export',
+    channel: 'Channel', viewers: 'Viewers', fontSize: 'Font size',
+    openOverlay: 'Open Overlay', howToObs: 'How to use with Browser Source',
+    sendMsg: 'Send a message...',
+    usersHint: 'Format: <code style="color:var(--accent2)">Name,#color</code> — one user per line',
+    userPlaceholder: 'Username...',
+    msgsPlaceholder: 'One message per line.\nUse @Username at the start to assign to a specific user.',
+    obsInfo: 'Open the overlay in browser and use <strong>Window Capture</strong> in OBS.<br><br>Or serve via local server and use <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
+    alertNoMsgs: 'Add messages first!', alertNoUsers: 'Add users first!',
+    serverAlert: '📡 To use with Browser Source in OBS:\n\n1. Open terminal (CMD) in the files folder\n2. Run: python server.py\n3. In OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n\nThen open the controller at:\n   http://localhost:8080/controller.html',
+  },
+  fr: {
+    controller: 'Contrôleur',
+    stopped: 'Arrêté', live: 'En direct...', completed: 'Terminé ✓',
+    control: 'Contrôle', users: 'Utilisateurs', messages: 'Messages',
+    appearance: 'Apparence', obsOverlay: 'Overlay OBS',
+    minInterval: 'Intervalle min. (sec)', maxInterval: 'Intervalle max. (sec)',
+    maxMsgs: 'Max. msgs en aperçu', mode: 'Mode',
+    sequential: 'Séquentiel', random: 'Aléatoire', loop: 'Boucle',
+    badges: 'Badges (sub/mod/vip)', autoLoop: 'Boucle automatique',
+    start: '▶ Démarrer', stop: '■ Arrêter', clear: '🗑 Effacer',
+    import: 'Importer', export: 'Exporter',
+    channel: 'Chaîne', viewers: 'Spectateurs', fontSize: 'Taille de police',
+    openOverlay: 'Ouvrir l\'Overlay', howToObs: 'Comment utiliser avec Browser Source',
+    sendMsg: 'Envoyer un message...',
+    usersHint: 'Format : <code style="color:var(--accent2)">Nom,#couleur</code> — un utilisateur par ligne',
+    userPlaceholder: 'Nom d\'utilisateur...',
+    msgsPlaceholder: 'Un message par ligne.\nUtilisez @NomUser au début pour attribuer à un utilisateur.',
+    obsInfo: 'Ouvrez l\'overlay dans le navigateur et utilisez <strong>Window Capture</strong> dans OBS.<br><br>Ou servez via un serveur local et utilisez <strong>Browser Source</strong> :<br><code>http://localhost:8080/overlay.html</code>',
+    alertNoMsgs: 'Ajoutez des messages d\'abord !', alertNoUsers: 'Ajoutez des utilisateurs d\'abord !',
+    serverAlert: '📡 Pour utiliser avec Browser Source dans OBS :\n\n1. Ouvrez le terminal (CMD) dans le dossier des fichiers\n2. Exécutez : python server.py\n3. Dans OBS → Browser Source → URL :\n   http://localhost:8080/overlay.html\n\nEnsuite ouvrez le contrôleur à :\n   http://localhost:8080/controller.html',
+  }
+};
+
+let currentLang = 'pt';
+
+function setLang(lang) {
+  currentLang = lang;
+  const t = i18n[lang];
+
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.innerHTML = t[key];
+  });
+
+  // Update placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (t[key] !== undefined) el.placeholder = t[key];
+  });
+
+  // Update select options
+  const modeEl = document.getElementById('mode');
+  if (modeEl) {
+    const val = modeEl.value;
+    modeEl.querySelectorAll('option[data-i18n]').forEach(opt => {
+      const key = opt.getAttribute('data-i18n');
+      if (t[key]) opt.textContent = t[key];
+    });
+    modeEl.value = val;
+  }
+
+  // Update OBS info box
+  const obsBox = document.querySelector('.obs-info');
+  if (obsBox) obsBox.innerHTML = t.obsInfo;
+
+  // Update active button
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  const flags = {pt:'🇧🇷', en:'🇺🇸', fr:'🇫🇷'};
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    if (b.textContent === flags[lang]) b.classList.add('active');
+  });
+
+  // Update html lang attribute
+  document.documentElement.lang = lang;
+}
+
+// Replace alert strings in functions using current language
+const _origStart = startChat;
+
+</script>
+</body>
+</html>
