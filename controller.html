@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<title>StreamChat Simulator – Controlador</title>
+<title>StreamChat Simulator</title>
 <style>
   :root {
     --bg:#0e0e10; --surface:#18181b; --surface2:#1f1f23;
@@ -15,7 +15,10 @@
   .header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
   .logo{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;}
   .header h1{font-size:15px;font-weight:700;}
-  .badge-obs{margin-left:auto;font-size:11px;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px;border:1px solid var(--border);}
+  .lang-btns{margin-left:auto;display:flex;gap:4px;}
+  .lang-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 7px;cursor:pointer;font-size:13px;color:var(--text);transition:all .15s;}
+  .lang-btn:hover{background:var(--surface2);}
+  .lang-btn.active{background:var(--accent);border-color:var(--accent);}
   .status-bar{padding:10px 20px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
   .dot.live{background:var(--red);box-shadow:0 0 6px var(--red);animation:pulse 1.5s infinite;}
@@ -75,112 +78,116 @@
   .preview-footer{padding:10px 14px;background:rgba(14,14,16,.95);border-top:1px solid var(--border);display:flex;gap:8px;}
   .fake-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--muted);}
   .fake-btn{background:var(--accent);border:none;border-radius:6px;padding:7px 12px;color:#fff;font-size:12px;font-weight:600;}
-  .lang-bar{display:flex;gap:4px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);}
-  .lang-btn{background:none;border:1px solid transparent;border-radius:6px;font-size:16px;cursor:pointer;padding:3px 7px;transition:all .15s;}
-  .lang-btn:hover{border-color:var(--border);background:var(--surface2);}
-  .lang-btn.active{border-color:var(--accent);background:var(--surface2);}
 </style>
 </head>
 <body>
 
 <div id="panel">
+
+  <!-- HEADER -->
   <div class="header">
     <div class="logo">💬</div>
     <h1>StreamChat Simulator</h1>
-    <span class="badge-obs" data-i18n="controller">Controlador</span>
+    <div class="lang-btns">
+      <button class="lang-btn active" onclick="setLang('pt')">🇧🇷 PT</button>
+      <button class="lang-btn" onclick="setLang('en')">🇺🇸 EN</button>
+      <button class="lang-btn" onclick="setLang('fr')">🇫🇷 FR</button>
     </div>
-  <div class="lang-bar">
-    <button class="lang-btn active" onclick="setLang('pt')" title="Português">🇧🇷</button>
-    <button class="lang-btn" onclick="setLang('en')" title="English">🇺🇸</button>
-    <button class="lang-btn" onclick="setLang('fr')" title="Français">🇫🇷</button
   </div>
 
+  <!-- STATUS -->
   <div class="status-bar">
     <div class="dot" id="dot"></div>
-    <span id="status-text" data-i18n="stopped">Parado</span>
+    <span id="status-text">Parado</span>
     <div class="prog"><div class="prog-fill" id="prog" style="width:0%"></div></div>
     <span class="counter" id="counter">0/0</span>
   </div>
 
   <!-- CONTROLO -->
   <div class="section">
-    <div class="section-title" data-i18n="control">Controlo</div>
+    <div class="section-title" id="lbl-control">Controlo</div>
     <div class="grid2">
-      <div><label class="lbl" data-i18n="minInterval">Intervalo mín. (seg)</label><input type="number" id="min-int" value="3" min="0.5" step="0.5"></div>
-      <div><label class="lbl" data-i18n="maxInterval">Intervalo máx. (seg)</label><input type="number" id="max-int" value="7" min="1" step="0.5"></div>
+      <div><label class="lbl" id="lbl-minInt">Intervalo mín. (seg)</label><input type="number" id="min-int" value="3" min="0.5" step="0.5"></div>
+      <div><label class="lbl" id="lbl-maxInt">Intervalo máx. (seg)</label><input type="number" id="max-int" value="7" min="1" step="0.5"></div>
     </div>
     <div class="grid2">
-      <div><label class="lbl" data-i18n="maxMsgs">Máx. msgs no preview</label><input type="number" id="max-msgs" value="20" min="5" max="100"></div>
-      <div><label class="lbl" data-i18n="mode">Modo</label>
+      <div><label class="lbl" id="lbl-maxMsgs">Máx. msgs no preview</label><input type="number" id="max-msgs" value="20" min="5" max="100"></div>
+      <div><label class="lbl" id="lbl-mode">Modo</label>
         <select id="mode">
-          <option value="sequential" data-i18n="sequential">Sequencial</option>
-          <option value="random" data-i18n="random">Aleatório</option>
+          <option value="sequential" id="opt-seq">Sequencial</option>
+          <option value="random" id="opt-rnd">Aleatório</option>
           <option value="loop">Loop</option>
         </select>
       </div>
     </div>
-    <div class="toggle-row"><label data-i18n="badges">Badges (sub/mod/vip)</label><label class="toggle"><input type="checkbox" id="badges" checked><div class="tslider"></div></label></div>
-    <div class="toggle-row"><label data-i18n="autoLoop">Loop automático</label><label class="toggle"><input type="checkbox" id="loop" checked><div class="tslider"></div></label></div>
+    <div class="toggle-row"><label id="lbl-badges">Badges (sub/mod/vip)</label><label class="toggle"><input type="checkbox" id="badges" checked><div class="tslider"></div></label></div>
+    <div class="toggle-row"><label id="lbl-autoLoop">Loop automático</label><label class="toggle"><input type="checkbox" id="loop" checked><div class="tslider"></div></label></div>
     <div class="btn-row">
-      <button class="btn btn-success" onclick="startChat()"><span data-i18n="start">▶ Iniciar</span></button>
-      <button class="btn btn-danger" onclick="stopChat()"><span data-i18n="stop">■ Parar</span></button>
-      <button class="btn btn-ghost" onclick="clearChat()"><span data-i18n="clear">🗑 Limpar</span></button>
+      <button class="btn btn-success" id="btn-start" onclick="startChat()">▶ Iniciar</button>
+      <button class="btn btn-danger" id="btn-stop" onclick="stopChat()">■ Parar</button>
+      <button class="btn btn-ghost" id="btn-clear" onclick="clearChat()">🗑 Limpar</button>
     </div>
   </div>
 
   <!-- UTILIZADORES -->
   <div class="section">
-    <div class="section-title" data-i18n="users">Utilizadores</div>
+    <div class="section-title" id="lbl-users">Utilizadores</div>
     <div class="user-list" id="user-list"></div>
     <div class="add-row">
-      <input type="text" id="new-name" id="new-name-input" data-i18n-placeholder="userPlaceholder" placeholder="Nome do utilizador...">
+      <input type="text" id="new-name" placeholder="Nome do utilizador...">
       <input type="color" id="new-color" value="#9147ff">
-      <button class="btn btn-primary" onclick="addUser()" title="Add">+</button>
+      <button class="btn btn-primary" onclick="addUser()">+</button>
     </div>
     <div class="btn-row">
-      <button class="btn btn-ghost" onclick="document.getElementById('f-users').click()">📂 <span data-i18n="import">Importar</span></button>
+      <button class="btn btn-ghost" id="btn-import-users" onclick="document.getElementById('f-users').click()">📂 Importar</button>
       <input type="file" id="f-users" accept=".txt,.csv" style="display:none" onchange="importUsers(this)">
-      <button class="btn btn-ghost" onclick="exportUsers()">💾 <span data-i18n="export">Exportar</span></button>
+      <button class="btn btn-ghost" id="btn-export-users" onclick="exportUsers()">💾 Exportar</button>
     </div>
-    <p class="hint" data-i18n="usersHint">Formato: <code style="color:var(--accent2)">Nome,#cor</code> — uma linha por utilizador</p>
+    <p class="hint" id="lbl-formatHint">Formato: <code style="color:var(--accent2)">Nome,#cor</code> — uma linha por utilizador</p>
   </div>
 
   <!-- MENSAGENS -->
   <div class="section">
-    <div class="section-title" data-i18n="messages">Mensagens</div>
-    <textarea id="msgs" data-i18n-placeholder="msgsPlaceholder" placeholder="Uma mensagem por linha.&#10;Use @NomeUser no início para atribuir a um utilizador."></textarea>
+    <div class="section-title" id="lbl-messages">Mensagens</div>
+    <textarea id="msgs" placeholder="Uma mensagem por linha.&#10;Use @NomeUser no início para atribuir a um utilizador."></textarea>
     <div class="btn-row">
-      <button class="btn btn-ghost" onclick="document.getElementById('f-msgs').click()">📂 <span data-i18n="import">Importar</span></button>
+      <button class="btn btn-ghost" id="btn-import-msgs" onclick="document.getElementById('f-msgs').click()">📂 Importar</button>
       <input type="file" id="f-msgs" accept=".txt" style="display:none" onchange="importMsgs(this)">
-      <button class="btn btn-ghost" onclick="exportMsgs()">💾 <span data-i18n="export">Exportar</span></button>
+      <button class="btn btn-ghost" id="btn-export-msgs" onclick="exportMsgs()">💾 Exportar</button>
     </div>
   </div>
 
   <!-- APARÊNCIA -->
   <div class="section">
-    <div class="section-title" data-i18n="appearance">Aparência</div>
+    <div class="section-title" id="lbl-appearance">Aparência</div>
     <div class="grid2">
-      <div><label class="lbl" data-i18n="channel">Canal</label><input type="text" id="channel" value="My Channel" oninput="updateHeader()"></div>
-      <div><label class="lbl" data-i18n="viewers">Viewers</label><input type="number" id="viewers" value="847" oninput="updateHeader()"></div>
+      <div><label class="lbl" id="lbl-channel">Canal</label><input type="text" id="channel" value="My Channel" oninput="updateHeader()"></div>
+      <div><label class="lbl">Viewers</label><input type="number" id="viewers" value="847" oninput="updateHeader()"></div>
     </div>
-    <div><label class="lbl" data-i18n="fontSize">Tamanho da fonte</label>
-      <div class="range-row"><input type="range" id="fsize" min="11" max="22" value="14" oninput="document.getElementById('fsize-val').textContent=this.value+'px'"><span class="rval" id="fsize-val">14px</span></div>
+    <div><label class="lbl" id="lbl-fontSize">Tamanho da fonte</label>
+      <div class="range-row">
+        <input type="range" id="fsize" min="11" max="22" value="14" oninput="document.getElementById('fsize-val').textContent=this.value+'px'">
+        <span class="rval" id="fsize-val">14px</span>
+      </div>
     </div>
   </div>
 
   <!-- OBS -->
   <div class="section">
-    <div class="section-title" data-i18n="obsOverlay">Overlay OBS</div>
-    <div class="obs-info">
-      <span data-i18n="obsInfo">Abre o overlay no browser e usa <strong>Window Capture</strong> no OBS.<br><br>Ou serve via servidor local e usa <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code></span>
+    <div class="section-title">Overlay OBS</div>
+    <div class="obs-info" id="lbl-obsInfo">
+      Abre o overlay no browser e usa <strong>Window Capture</strong> no OBS.<br><br>
+      Ou serve via servidor local e usa <strong>Browser Source</strong>:<br>
+      <code>http://localhost:8080/overlay.html</code>
     </div>
     <div class="btn-row">
-      <button class="btn btn-primary btn-full" onclick="openOverlay()">🖥️ <span data-i18n="openOverlay">Abrir Overlay</span></button>
+      <button class="btn btn-primary btn-full" id="btn-openOverlay" onclick="openOverlay()">🖥️ Abrir Overlay</button>
     </div>
     <div class="btn-row">
-      <button class="btn btn-ghost btn-full" onclick="showServerInstructions()">⚙️ <span data-i18n="howToObs">Como usar com Browser Source</span></button>
+      <button class="btn btn-ghost btn-full" id="btn-howTo" onclick="showServerInstructions()">⚙️ Como usar com Browser Source</button>
     </div>
   </div>
+
 </div>
 
 <!-- PREVIEW -->
@@ -191,13 +198,95 @@
   </div>
   <div id="preview-msgs"></div>
   <div class="preview-footer">
-    <div class="fake-input" data-i18n="sendMsg">Enviar uma mensagem...</div>
+    <div class="fake-input" id="lbl-sendMsg">Enviar uma mensagem...</div>
     <div class="fake-btn">Chat</div>
   </div>
 </div>
 
 <script>
-// ===== ENVIO PARA OVERLAY VIA SERVIDOR =====
+// ===== I18N =====
+const T = {
+  pt: {
+    'lbl-control':'CONTROLO','lbl-users':'UTILIZADORES','lbl-messages':'MENSAGENS',
+    'lbl-appearance':'APARÊNCIA','lbl-minInt':'Intervalo mín. (seg)','lbl-maxInt':'Intervalo máx. (seg)',
+    'lbl-maxMsgs':'Máx. msgs no preview','lbl-mode':'Modo','lbl-channel':'Canal',
+    'lbl-fontSize':'Tamanho da fonte','lbl-badges':'Badges (sub/mod/vip)','lbl-autoLoop':'Loop automático',
+    'btn-start':'▶ Iniciar','btn-stop':'■ Parar','btn-clear':'🗑 Limpar',
+    'btn-import-users':'📂 Importar','btn-export-users':'💾 Exportar',
+    'btn-import-msgs':'📂 Importar','btn-export-msgs':'💾 Exportar',
+    'btn-openOverlay':'🖥️ Abrir Overlay','btn-howTo':'⚙️ Como usar com Browser Source',
+    'lbl-formatHint':'Formato: <code style="color:var(--accent2)">Nome,#cor</code> — uma linha por utilizador',
+    'lbl-obsInfo':'Abre o overlay no browser e usa <strong>Window Capture</strong> no OBS.<br><br>Ou serve via servidor local e usa <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
+    'lbl-sendMsg':'Enviar uma mensagem...',
+    'opt-seq':'Sequencial','opt-rnd':'Aleatório',
+    'status-stopped':'Parado','status-live':'A transmitir...','status-done':'Concluído ✓',
+    'alert-noMsgs':'Adiciona mensagens primeiro!','alert-noUsers':'Adiciona utilizadores primeiro!',
+    'new-name-ph':'Nome do utilizador...',
+    'msgs-ph':'Uma mensagem por linha.\nUse @NomeUser no início para atribuir a um utilizador.',
+    'obs-instructions':'Para usar com Browser Source no OBS:\n\n1. Corre: python server.py na pasta dos ficheiros\n2. No OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n3. Abre o controlador em:\n   http://localhost:8080/controller.html'
+  },
+  en: {
+    'lbl-control':'CONTROL','lbl-users':'USERS','lbl-messages':'MESSAGES',
+    'lbl-appearance':'APPEARANCE','lbl-minInt':'Min. interval (sec)','lbl-maxInt':'Max. interval (sec)',
+    'lbl-maxMsgs':'Max. msgs in preview','lbl-mode':'Mode','lbl-channel':'Channel',
+    'lbl-fontSize':'Font size','lbl-badges':'Badges (sub/mod/vip)','lbl-autoLoop':'Auto loop',
+    'btn-start':'▶ Start','btn-stop':'■ Stop','btn-clear':'🗑 Clear',
+    'btn-import-users':'📂 Import','btn-export-users':'💾 Export',
+    'btn-import-msgs':'📂 Import','btn-export-msgs':'💾 Export',
+    'btn-openOverlay':'🖥️ Open Overlay','btn-howTo':'⚙️ How to use with Browser Source',
+    'lbl-formatHint':'Format: <code style="color:var(--accent2)">Name,#color</code> — one user per line',
+    'lbl-obsInfo':'Open the overlay in your browser and use <strong>Window Capture</strong> in OBS.<br><br>Or serve via local server and use <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
+    'lbl-sendMsg':'Send a message...',
+    'opt-seq':'Sequential','opt-rnd':'Random',
+    'status-stopped':'Stopped','status-live':'Broadcasting...','status-done':'Completed ✓',
+    'alert-noMsgs':'Add messages first!','alert-noUsers':'Add users first!',
+    'new-name-ph':'Username...',
+    'msgs-ph':'One message per line.\nUse @Username at the start to assign to a specific user.',
+    'obs-instructions':'To use with Browser Source in OBS:\n\n1. Run: python server.py in the files folder\n2. In OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n3. Open the controller at:\n   http://localhost:8080/controller.html'
+  },
+  fr: {
+    'lbl-control':'CONTRÔLE','lbl-users':'UTILISATEURS','lbl-messages':'MESSAGES',
+    'lbl-appearance':'APPARENCE','lbl-minInt':'Intervalle min. (sec)','lbl-maxInt':'Intervalle max. (sec)',
+    'lbl-maxMsgs':'Max. msgs dans aperçu','lbl-mode':'Mode','lbl-channel':'Chaîne',
+    'lbl-fontSize':'Taille de police','lbl-badges':'Badges (sub/mod/vip)','lbl-autoLoop':'Boucle auto',
+    'btn-start':'▶ Démarrer','btn-stop':'■ Arrêter','btn-clear':'🗑 Effacer',
+    'btn-import-users':'📂 Importer','btn-export-users':'💾 Exporter',
+    'btn-import-msgs':'📂 Importer','btn-export-msgs':'💾 Exporter',
+    'btn-openOverlay':'🖥️ Ouvrir Overlay','btn-howTo':'⚙️ Comment utiliser avec Browser Source',
+    'lbl-formatHint':'Format : <code style="color:var(--accent2)">Nom,#couleur</code> — un utilisateur par ligne',
+    'lbl-obsInfo':'Ouvrez l\'overlay dans le navigateur et utilisez <strong>Window Capture</strong> dans OBS.<br><br>Ou servez via serveur local et utilisez <strong>Browser Source</strong> :<br><code>http://localhost:8080/overlay.html</code>',
+    'lbl-sendMsg':'Envoyer un message...',
+    'opt-seq':'Séquentiel','opt-rnd':'Aléatoire',
+    'status-stopped':'Arrêté','status-live':'En direct...','status-done':'Terminé ✓',
+    'alert-noMsgs':'Ajoutez des messages d\'abord !','alert-noUsers':'Ajoutez des utilisateurs d\'abord !',
+    'new-name-ph':'Nom d\'utilisateur...',
+    'msgs-ph':'Un message par ligne.\nUtilisez @Nom au début pour attribuer à un utilisateur.',
+    'obs-instructions':'Pour utiliser avec Browser Source dans OBS :\n\n1. Exécutez : python server.py dans le dossier\n2. Dans OBS → Browser Source → URL :\n   http://localhost:8080/overlay.html\n3. Ouvrez le contrôleur à :\n   http://localhost:8080/controller.html'
+  }
+};
+
+let lang = localStorage.getItem('sc_lang') || 'pt';
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('sc_lang', l);
+  const t = T[l];
+  Object.keys(t).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === 'INPUT' && el.type !== 'button') {
+      el.placeholder = t[id];
+    } else {
+      el.innerHTML = t[id];
+    }
+  });
+  // Update textarea placeholder
+  document.getElementById('msgs').placeholder = t['msgs-ph'];
+  document.getElementById('new-name').placeholder = t['new-name-ph'];
+  // Highlight active lang button
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.lang-btn[onclick="setLang('${l}')"]`).classList.add('active');
+}
 
 // ===== ESTADO =====
 let users = [
@@ -215,109 +304,11 @@ let users = [
 let running=false, timer=null, idx=0, count=0, total=0;
 const ICONS={sub:'⭐',mod:'🗡️',vip:'💎'};
 
-
-// ===== I18N =====
-const TRANSLATIONS = {
-  pt: {
-    control:'Controlo', users:'Utilizadores', messages:'Mensagens',
-    appearance:'Aparência', minInt:'Intervalo mín. (seg)', maxInt:'Intervalo máx. (seg)',
-    maxMsgs:'Máx. msgs no preview', mode:'Modo', channel:'Canal', fontSize:'Tamanho da fonte',
-    sequential:'Sequencial', random:'Aleatório',
-    badges:'Badges (sub/mod/vip)', autoLoop:'Loop automático',
-    start:'▶ Iniciar', stop:'■ Parar', clear:'🗑 Limpar',
-    import:'📂 Importar', export:'💾 Exportar',
-    openOverlay:'🖥️ Abrir Overlay', howTo:'⚙️ Como usar com Browser Source',
-    formatHint:'Formato: <code style="color:var(--accent2)">Nome,#cor</code> — uma linha por utilizador',
-    stopped:'Parado', sendMsg:'Enviar uma mensagem...',
-    obsInfo:'Abre o overlay no browser e usa <strong>Window Capture</strong> no OBS.<br><br>Ou serve via servidor local e usa <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
-    alertNoMsgs:'Adiciona mensagens primeiro!', alertNoUsers:'Adiciona utilizadores primeiro!',
-    statusLive:'A transmitir...', statusDone:'Concluído ✓',
-    obsInstructions:`📡 Para usar com Browser Source no OBS:\n\n1. Abre o terminal (CMD) na pasta dos ficheiros\n2. Corre: python server.py\n3. No OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n\nDepois abre o controlador em:\n   http://localhost:8080/controller.html`,
-    newUserPlaceholder:'Nome do utilizador...',
-    msgsPlaceholder:'Uma mensagem por linha.\nUse @NomeUser no início para atribuir a um utilizador.',
-  },
-  en: {
-    control:'Control', users:'Users', messages:'Messages',
-    appearance:'Appearance', minInt:'Min. interval (sec)', maxInt:'Max. interval (sec)',
-    maxMsgs:'Max. msgs in preview', mode:'Mode', channel:'Channel', fontSize:'Font size',
-    sequential:'Sequential', random:'Random',
-    badges:'Badges (sub/mod/vip)', autoLoop:'Auto loop',
-    start:'▶ Start', stop:'■ Stop', clear:'🗑 Clear',
-    import:'📂 Import', export:'💾 Export',
-    openOverlay:'🖥️ Open Overlay', howTo:'⚙️ How to use with Browser Source',
-    formatHint:'Format: <code style="color:var(--accent2)">Name,#color</code> — one user per line',
-    stopped:'Stopped', sendMsg:'Send a message...',
-    obsInfo:'Open the overlay in your browser and use <strong>Window Capture</strong> in OBS.<br><br>Or serve via local server and use <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
-    alertNoMsgs:'Add messages first!', alertNoUsers:'Add users first!',
-    statusLive:'Broadcasting...', statusDone:'Completed ✓',
-    obsInstructions:`📡 To use with Browser Source in OBS:\n\n1. Open terminal (CMD) in the files folder\n2. Run: python server.py\n3. In OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n\nThen open the controller at:\n   http://localhost:8080/controller.html`,
-    newUserPlaceholder:'Username...',
-    msgsPlaceholder:'One message per line.\nUse @Username at the start to assign to a specific user.',
-  },
-  fr: {
-    control:'Contrôle', users:'Utilisateurs', messages:'Messages',
-    appearance:'Apparence', minInt:'Intervalle min. (sec)', maxInt:'Intervalle max. (sec)',
-    maxMsgs:'Max. msgs dans aperçu', mode:'Mode', channel:'Chaîne', fontSize:'Taille de police',
-    sequential:'Séquentiel', random:'Aléatoire',
-    badges:'Badges (sub/mod/vip)', autoLoop:'Boucle auto',
-    start:'▶ Démarrer', stop:'■ Arrêter', clear:'🗑 Effacer',
-    import:'📂 Importer', export:'💾 Exporter',
-    openOverlay:'🖥️ Ouvrir Overlay', howTo:'⚙️ Comment utiliser avec Browser Source',
-    formatHint:'Format : <code style="color:var(--accent2)">Nom,#couleur</code> — un utilisateur par ligne',
-    stopped:'Arrêté', sendMsg:'Envoyer un message...',
-    obsInfo:'Ouvrez l'overlay dans le navigateur et utilisez <strong>Window Capture</strong> dans OBS.<br><br>Ou servez via serveur local et utilisez <strong>Browser Source</strong> :<br><code>http://localhost:8080/overlay.html</code>',
-    alertNoMsgs:'Ajoutez des messages d'abord !', alertNoUsers:'Ajoutez des utilisateurs d'abord !',
-    statusLive:'En direct...', statusDone:'Terminé ✓',
-    obsInstructions:`📡 Pour utiliser avec Browser Source dans OBS :\n\n1. Ouvrez le terminal (CMD) dans le dossier des fichiers\n2. Exécutez : python server.py\n3. Dans OBS → Browser Source → URL :\n   http://localhost:8080/overlay.html\n\nEnsuite ouvrez le contrôleur à :\n   http://localhost:8080/controller.html`,
-    newUserPlaceholder:'Nom d'utilisateur...',
-    msgsPlaceholder:'Un message par ligne.\nUtilisez @Nom au début pour attribuer à un utilisateur spécifique.',
-  }
-};
-
-let currentLang = 'pt';
-
-function setLang(lang) {
-  currentLang = lang;
-  const t = TRANSLATIONS[lang];
-
-  // Update all data-i18n elements
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    if (t[key] !== undefined) el.innerHTML = t[key];
-  });
-
-  // Update select options
-  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
-    const key = el.getAttribute('data-i18n-opt');
-    if (t[key] !== undefined) el.textContent = t[key];
-  });
-
-  // Update placeholders
-  const newName = document.getElementById('new-name');
-  if (newName) newName.placeholder = t.newUserPlaceholder;
-  const msgs = document.getElementById('msgs');
-  if (msgs) msgs.placeholder = t.msgsPlaceholder;
-
-  // Highlight active button
-  ['pt','en','fr'].forEach(l => {
-    const btn = document.getElementById('btn-'+l);
-    if (btn) btn.style.background = l === lang ? 'var(--accent)' : 'none';
-  });
-
-  localStorage.setItem('streamchat_lang', lang);
-}
-
-function t(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS['pt'])[key] || key; }
-
-// Apply lang from URL param or localStorage on load
 window.addEventListener('load', () => {
-  const params = new URLSearchParams(window.location.search);
-  const saved = params.get('lang') || localStorage.getItem('streamchat_lang') || 'pt';
-  setLang(saved);
+  setLang(lang);
   renderUsers();
   updateHeader();
 });
-
 
 // ===== UTILIZADORES =====
 function renderUsers(){
@@ -354,7 +345,7 @@ function importUsers(input){
   const f=input.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=e=>{
-    users = [];
+    users=[];
     e.target.result.split('\n').map(l=>l.trim()).filter(Boolean).forEach(line=>{
       const p=line.split(',');
       if(p[0].trim()) users.push({name:p[0].trim(), color:p[1]?p[1].trim():'#9147ff', badges:[]});
@@ -387,22 +378,22 @@ function exportMsgs(){ dl('mensagens.txt', document.getElementById('msgs').value
 function startChat(){
   if(running) return;
   const msgs=getMsgs();
-  if(!msgs.length){alert(i18n[currentLang].alertNoMsgs); return;}
-  if(!users.length){alert(i18n[currentLang].alertNoUsers); return;}
+  if(!msgs.length){alert(T[lang]['alert-noMsgs']); return;}
+  if(!users.length){alert(T[lang]['alert-noUsers']); return;}
   running=true; idx=0; count=0; total=msgs.length;
   document.getElementById('dot').classList.add('live');
-  document.getElementById('status-text').textContent=i18n[currentLang].live;
-  broadcast({type:'status', status:'live'});
+  document.getElementById('status-text').textContent=T[lang]['status-live'];
+  broadcast({type:'status',status:'live'});
   scheduleNext();
 }
 
 function stopChat(){
   running=false; clearTimeout(timer);
   document.getElementById('dot').classList.remove('live');
-  document.getElementById('status-text').textContent=i18n[currentLang].stopped;
+  document.getElementById('status-text').textContent=T[lang]['status-stopped'];
   document.getElementById('prog').style.width='0%';
   document.getElementById('counter').textContent='0/0';
-  broadcast({type:'status', status:'stopped'});
+  broadcast({type:'status',status:'stopped'});
 }
 
 function clearChat(){
@@ -418,16 +409,16 @@ function scheduleNext(){
   const loop=document.getElementById('loop').checked;
   if(idx>=msgs.length){
     if(loop||mode==='loop'){idx=0;}
-    else{stopChat(); document.getElementById('status-text').textContent=i18n[currentLang].completed; return;}
+    else{stopChat(); document.getElementById('status-text').textContent=T[lang]['status-done']; return;}
   }
   const min=parseFloat(document.getElementById('min-int').value)*1000;
   const max=parseFloat(document.getElementById('max-int').value)*1000;
   const delay=Math.random()*(max-min)+min;
   const msgText=mode==='random'?msgs[Math.floor(Math.random()*msgs.length)]:msgs[idx++];
-  timer=setTimeout(()=>{ emit(msgText, msgs.length); scheduleNext(); }, delay);
+  timer=setTimeout(()=>{ emit(msgText,msgs.length); scheduleNext(); }, delay);
 }
 
-function emit(raw, tot){
+function emit(raw,tot){
   let user, text;
   if(raw.startsWith('@')){
     const sp=raw.indexOf(' ');
@@ -437,14 +428,8 @@ function emit(raw, tot){
       text=raw.substring(sp+1);
     } else {user=randUser(); text=raw;}
   } else {user=randUser(); text=raw;}
-
-  addPreviewMsg(user, text);
-
-  broadcast({
-    type:'message',
-    data:{username:user.name, color:user.color, badges:user.badges||[], text}
-  });
-
+  addPreviewMsg(user,text);
+  broadcast({type:'message',data:{username:user.name,color:user.color,badges:user.badges||[],text}});
   count++;
   if(tot>0){
     document.getElementById('prog').style.width=Math.min(count/tot*100,100)+'%';
@@ -454,7 +439,7 @@ function emit(raw, tot){
   document.getElementById('ph-viewers').textContent=Math.max(0,base+Math.floor((Math.random()-.5)*20)).toLocaleString();
 }
 
-function addPreviewMsg(user, text){
+function addPreviewMsg(user,text){
   const container=document.getElementById('preview-msgs');
   const max=parseInt(document.getElementById('max-msgs').value)||20;
   const showB=document.getElementById('badges').checked;
@@ -462,7 +447,7 @@ function addPreviewMsg(user, text){
   const d=document.createElement('div');
   d.className='cmsg'; d.style.fontSize=fs+'px';
   let b='';
-  if(showB && user.badges && user.badges.length){
+  if(showB&&user.badges&&user.badges.length){
     b=user.badges.map(x=>`<span style="display:inline-block;width:16px;height:16px;border-radius:3px;font-size:10px;line-height:16px;text-align:center;vertical-align:middle;background:${x==='mod'?'#00ad03':x==='vip'?'#e005b9':'#9147ff'};margin-right:2px">${ICONS[x]||''}</span>`).join('');
   }
   d.innerHTML=`${b}<span class="cname" style="color:${user.color}">${esc(user.name)}</span><span class="ctext">${esc(text)}</span>`;
@@ -473,155 +458,35 @@ function addPreviewMsg(user, text){
 
 function randUser(){ return users[Math.floor(Math.random()*users.length)]; }
 function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 function broadcast(data){
-  fetch('http://localhost:8080/send', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(data)
+  fetch('http://localhost:8080/send',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
   }).catch(()=>{});
 }
-function dl(name,content){ const a=document.createElement('a'); a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(content); a.download=name; a.click(); }
+
+function dl(name,content){
+  const a=document.createElement('a');
+  a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(content);
+  a.download=name; a.click();
+}
 
 function updateHeader(){
   document.getElementById('ph-channel').textContent=document.getElementById('channel').value||'My Channel';
   document.getElementById('ph-viewers').textContent=parseInt(document.getElementById('viewers').value||847).toLocaleString();
 }
 
-// ===== OVERLAY =====
 function openOverlay(){
-  const base=window.location.href.replace('controller.html','overlay.html');
-  window.open(base,'mozvibes_overlay','width=420,height=700,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no');
+  window.open('http://localhost:8080/overlay.html','mozvibes_overlay','width=420,height=700,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no');
 }
 
 function showServerInstructions(){
-  alert(
-    '📡 Para usar com Browser Source no OBS:\n\n' +
-    '1. Abre o terminal (CMD) na pasta dos ficheiros\n' +
-    '2. Corre: python -m http.server 8080\n' +
-    '3. No OBS → Browser Source → URL:\n' +
-    '   http://localhost:8080/overlay.html\n\n' +
-    'Depois abre o controlador em:\n' +
-    '   http://localhost:8080/controller.html\n\n' +
-i18n[currentLang].serverAlert
-  );
+  alert(T[lang]['obs-instructions']);
 }
 
 document.getElementById('new-name').addEventListener('keydown',e=>{ if(e.key==='Enter') addUser(); });
-
-// ===== INTERNACIONALIZAÇÃO =====
-const i18n = {
-  pt: {
-    controller: 'Controlador',
-    stopped: 'Parado', live: 'A transmitir...', completed: 'Concluído ✓',
-    control: 'Controlo', users: 'Utilizadores', messages: 'Mensagens',
-    appearance: 'Aparência', obsOverlay: 'Overlay OBS',
-    minInterval: 'Intervalo mín. (seg)', maxInterval: 'Intervalo máx. (seg)',
-    maxMsgs: 'Máx. msgs no preview', mode: 'Modo',
-    sequential: 'Sequencial', random: 'Aleatório', loop: 'Loop',
-    badges: 'Badges (sub/mod/vip)', autoLoop: 'Loop automático',
-    start: '▶ Iniciar', stop: '■ Parar', clear: '🗑 Limpar',
-    import: 'Importar', export: 'Exportar',
-    channel: 'Canal', viewers: 'Viewers', fontSize: 'Tamanho da fonte',
-    openOverlay: 'Abrir Overlay', howToObs: 'Como usar com Browser Source',
-    sendMsg: 'Enviar uma mensagem...',
-    usersHint: 'Formato: <code style="color:var(--accent2)">Nome,#cor</code> — uma linha por utilizador',
-    userPlaceholder: 'Nome do utilizador...',
-    msgsPlaceholder: 'Uma mensagem por linha.\nUse @NomeUser no início para atribuir a um utilizador.',
-    obsInfo: 'Abre o overlay no browser e usa <strong>Window Capture</strong> no OBS.<br><br>Ou serve via servidor local e usa <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
-    alertNoMsgs: 'Adiciona mensagens primeiro!', alertNoUsers: 'Adiciona utilizadores primeiro!',
-    serverAlert: '📡 Para usar com Browser Source no OBS:\n\n1. Abre o terminal (CMD) na pasta dos ficheiros\n2. Corre: python server.py\n3. No OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n\nDepois abre o controlador em:\n   http://localhost:8080/controller.html',
-  },
-  en: {
-    controller: 'Controller',
-    stopped: 'Stopped', live: 'Broadcasting...', completed: 'Completed ✓',
-    control: 'Control', users: 'Users', messages: 'Messages',
-    appearance: 'Appearance', obsOverlay: 'OBS Overlay',
-    minInterval: 'Min. interval (sec)', maxInterval: 'Max. interval (sec)',
-    maxMsgs: 'Max. msgs in preview', mode: 'Mode',
-    sequential: 'Sequential', random: 'Random', loop: 'Loop',
-    badges: 'Badges (sub/mod/vip)', autoLoop: 'Auto loop',
-    start: '▶ Start', stop: '■ Stop', clear: '🗑 Clear',
-    import: 'Import', export: 'Export',
-    channel: 'Channel', viewers: 'Viewers', fontSize: 'Font size',
-    openOverlay: 'Open Overlay', howToObs: 'How to use with Browser Source',
-    sendMsg: 'Send a message...',
-    usersHint: 'Format: <code style="color:var(--accent2)">Name,#color</code> — one user per line',
-    userPlaceholder: 'Username...',
-    msgsPlaceholder: 'One message per line.\nUse @Username at the start to assign to a specific user.',
-    obsInfo: 'Open the overlay in browser and use <strong>Window Capture</strong> in OBS.<br><br>Or serve via local server and use <strong>Browser Source</strong>:<br><code>http://localhost:8080/overlay.html</code>',
-    alertNoMsgs: 'Add messages first!', alertNoUsers: 'Add users first!',
-    serverAlert: '📡 To use with Browser Source in OBS:\n\n1. Open terminal (CMD) in the files folder\n2. Run: python server.py\n3. In OBS → Browser Source → URL:\n   http://localhost:8080/overlay.html\n\nThen open the controller at:\n   http://localhost:8080/controller.html',
-  },
-  fr: {
-    controller: 'Contrôleur',
-    stopped: 'Arrêté', live: 'En direct...', completed: 'Terminé ✓',
-    control: 'Contrôle', users: 'Utilisateurs', messages: 'Messages',
-    appearance: 'Apparence', obsOverlay: 'Overlay OBS',
-    minInterval: 'Intervalle min. (sec)', maxInterval: 'Intervalle max. (sec)',
-    maxMsgs: 'Max. msgs en aperçu', mode: 'Mode',
-    sequential: 'Séquentiel', random: 'Aléatoire', loop: 'Boucle',
-    badges: 'Badges (sub/mod/vip)', autoLoop: 'Boucle automatique',
-    start: '▶ Démarrer', stop: '■ Arrêter', clear: '🗑 Effacer',
-    import: 'Importer', export: 'Exporter',
-    channel: 'Chaîne', viewers: 'Spectateurs', fontSize: 'Taille de police',
-    openOverlay: 'Ouvrir l\'Overlay', howToObs: 'Comment utiliser avec Browser Source',
-    sendMsg: 'Envoyer un message...',
-    usersHint: 'Format : <code style="color:var(--accent2)">Nom,#couleur</code> — un utilisateur par ligne',
-    userPlaceholder: 'Nom d\'utilisateur...',
-    msgsPlaceholder: 'Un message par ligne.\nUtilisez @NomUser au début pour attribuer à un utilisateur.',
-    obsInfo: 'Ouvrez l\'overlay dans le navigateur et utilisez <strong>Window Capture</strong> dans OBS.<br><br>Ou servez via un serveur local et utilisez <strong>Browser Source</strong> :<br><code>http://localhost:8080/overlay.html</code>',
-    alertNoMsgs: 'Ajoutez des messages d\'abord !', alertNoUsers: 'Ajoutez des utilisateurs d\'abord !',
-    serverAlert: '📡 Pour utiliser avec Browser Source dans OBS :\n\n1. Ouvrez le terminal (CMD) dans le dossier des fichiers\n2. Exécutez : python server.py\n3. Dans OBS → Browser Source → URL :\n   http://localhost:8080/overlay.html\n\nEnsuite ouvrez le contrôleur à :\n   http://localhost:8080/controller.html',
-  }
-};
-
-let currentLang = 'pt';
-
-function setLang(lang) {
-  currentLang = lang;
-  const t = i18n[lang];
-
-  // Update all data-i18n elements
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    if (t[key] !== undefined) el.innerHTML = t[key];
-  });
-
-  // Update placeholders
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    if (t[key] !== undefined) el.placeholder = t[key];
-  });
-
-  // Update select options
-  const modeEl = document.getElementById('mode');
-  if (modeEl) {
-    const val = modeEl.value;
-    modeEl.querySelectorAll('option[data-i18n]').forEach(opt => {
-      const key = opt.getAttribute('data-i18n');
-      if (t[key]) opt.textContent = t[key];
-    });
-    modeEl.value = val;
-  }
-
-  // Update OBS info box
-  const obsBox = document.querySelector('.obs-info');
-  if (obsBox) obsBox.innerHTML = t.obsInfo;
-
-  // Update active button
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-  const flags = {pt:'🇧🇷', en:'🇺🇸', fr:'🇫🇷'};
-  document.querySelectorAll('.lang-btn').forEach(b => {
-    if (b.textContent === flags[lang]) b.classList.add('active');
-  });
-
-  // Update html lang attribute
-  document.documentElement.lang = lang;
-}
-
-// Replace alert strings in functions using current language
-const _origStart = startChat;
-
 </script>
 </body>
 </html>
