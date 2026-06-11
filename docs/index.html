@@ -96,16 +96,22 @@ nav {
 }
 
 .lang-btn {
-  background: none;
-  border: none;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 18px;
-  opacity: 0.45;
-  transition: opacity .2s;
-  padding: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 1;
+  transition: all .2s;
+  padding: 5px 10px;
   line-height: 1;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.3px;
 }
-.lang-btn:hover, .lang-btn.active { opacity: 1; }
+.lang-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.lang-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
 
 /* ── HERO ── */
 .hero {
@@ -593,9 +599,9 @@ footer a:hover { color: var(--accent); }
     <li><a href="#download" data-i18n="nav-download">Download</a></li>
   </ul>
   <div class="lang-switch">
-    <button class="lang-btn" onclick="setLang('pt')" title="Português">🇧🇷</button>
-    <button class="lang-btn active" onclick="setLang('en')" title="English">🇺🇸</button>
-    <button class="lang-btn" onclick="setLang('fr')" title="Français">🇫🇷</button>
+    <button class="lang-btn" onclick="setLang('pt')" title="Português">🇧🇷 PT</button>
+    <button class="lang-btn" onclick="setLang('en')" title="English">🇺🇸 EN</button>
+    <button class="lang-btn" onclick="setLang('fr')" title="Français">🇫🇷 FR</button>
   </div>
 </nav>
 
@@ -611,7 +617,7 @@ footer a:hover { color: var(--accent); }
       <p class="hero-sub" data-i18n="hero-sub">Custom users, messages and colours. Transparent overlay. Works directly in OBS Browser Source. No coding required.</p>
       <div class="hero-actions">
         <a href="#download" class="btn-primary">⬇ <span data-i18n="btn-download">Download Free</span></a>
-        <a href="https://github.com/YOUR_USER/streamchat-simulator" target="_blank" class="btn-ghost">⭐ GitHub</a>
+        <a href="https://github.com/MahSomething/streamchat-simulator" target="_blank" class="btn-ghost">⭐ GitHub</a>
       </div>
       <div class="hero-stats">
         <div class="stat-item">
@@ -760,10 +766,10 @@ Reply with both files separated as:
     <h2 class="section-title" data-i18n="dl-title">Ready to add chat to your videos?</h2>
     <p class="section-sub" data-i18n="dl-sub">Download the latest release, extract to a folder, and double-click to start.</p>
     <div class="download-actions">
-      <a href="https://github.com/YOUR_USER/streamchat-simulator/releases/latest" class="btn-primary" target="_blank">
+      <a href="https://github.com/MahSomething/streamchat-simulator/releases/latest" class="btn-primary" target="_blank">
         ⬇ <span data-i18n="btn-release">Download Latest Release</span>
       </a>
-      <a href="https://github.com/YOUR_USER/streamchat-simulator" class="btn-ghost" target="_blank">
+      <a href="https://github.com/MahSomething/streamchat-simulator" class="btn-ghost" target="_blank">
         ⭐ <span data-i18n="btn-github">View on GitHub</span>
       </a>
     </div>
@@ -780,7 +786,7 @@ Reply with both files separated as:
 <footer>
   <span>© 2025 StreamChat Simulator — MIT License</span>
   <span data-i18n="footer-made">Made with ❤️ and Claude.ai by Mahomed</span>
-  <a href="https://github.com/YOUR_USER/streamchat-simulator" target="_blank">GitHub →</a>
+  <a href="https://github.com/MahSomething/streamchat-simulator" target="_blank">GitHub →</a>
 </footer>
 
 <script>
@@ -890,7 +896,7 @@ const T = {
   }
 };
 
-let currentLang = 'en';
+let currentLang = 'pt';
 
 function setLang(l) {
   currentLang = l;
@@ -905,7 +911,7 @@ function setLang(l) {
 }
 
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('sc_site_lang') || 'en';
+  const saved = localStorage.getItem('sc_site_lang') || 'pt';
   setLang(saved);
   startDemo();
 });
